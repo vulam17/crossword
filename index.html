@@ -155,6 +155,31 @@
  .board-panel{grid-row:1}
  .side-right{grid-row:2}
 }
+
+/* Final mobile input layout override (must come after desktop .board-controls rules). */
+@media (max-width: 900px){
+ .board-controls{
+  display:grid !important;
+  grid-template-columns:minmax(0,1fr) !important;
+  align-items:stretch;
+  justify-content:stretch;
+  width:100%;
+  gap:8px;
+ }
+ .board-controls #currentClue{grid-row:auto}
+ .board-controls .mobile-keyboard-input{
+  display:block !important;
+  visibility:visible !important;
+  width:100% !important;
+  min-width:0 !important;
+  height:46px;
+  flex:none;
+  margin:0;
+ }
+ .board-controls .board-actions{width:100%;justify-content:stretch}
+ .board-controls .board-actions button{flex:1}
+}
+
 @media(max-width:560px){
  .header-brand{gap:6px}
  .header-brand p{order:3;width:100%;max-width:none}
