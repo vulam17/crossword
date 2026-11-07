@@ -80,7 +80,24 @@
 
 /* Mobile virtual keyboard bridge */
 
-.mobile-keyboard-input{position:fixed;left:0;bottom:0;width:2px;height:2px;opacity:.01;border:0;padding:0;margin:0;z-index:-1;font-size:16px;pointer-events:none}
+
+/* Mobile keyboard: use a real, visible input as a reliable fallback.
+   Mobile browsers may refuse to open the virtual keyboard for tiny/off-screen inputs. */
+.mobile-keyboard-input{display:none}
+@media(max-width:900px){
+ .board-controls{display:grid;grid-template-columns:minmax(0,1fr);gap:8px;width:100%}
+ .board-controls #currentClue{grid-row:1}
+ .mobile-keyboard-input{
+  display:block;width:100%;height:44px;padding:8px 12px;
+  border:2px solid #7966ff;border-radius:11px;background:#fff;
+  color:#26334e;font-size:16px;line-height:1.2;outline:none;
+  appearance:none;-webkit-appearance:none;opacity:1;position:relative;
+  z-index:2;pointer-events:auto;touch-action:manipulation;
+ }
+ .mobile-keyboard-input:focus{border-color:#ff9d2e;box-shadow:0 0 0 3px #ff9d2e33}
+ .mobile-keyboard-input::placeholder{color:#8792a8}
+}
+
 
 /* Header compact game controls and answer button under the board */
 
@@ -186,7 +203,7 @@
  <button class="primary w-100" id="start">🎲 BỐC THĂM & BẮT ĐẦU</button>
 </section>
 <main class="game" id="game">
- <section class="panel board-panel"><div class="board-heading"><b>🧩 BẢNG Ô CHỮ</b><div class="d-flex gap-2 align-items-center"><span class="badge text-bg-info" id="levelBadge">MEDIUM</span><span class="badge text-bg-warning" id="boardProgress">Đang thi đấu</span></div></div><div class="board-scroll"><div class="grid" id="grid"></div></div><div class="board-controls"><div class="text-secondary small" id="currentClue">Chọn một ô trên bảng</div><div class="board-actions"><button class="primary" id="submit">✓ KIỂM TRA</button><button class="surrender" id="surrender">🏳 ĐẦU HÀNG</button></div></div></section>
+ <section class="panel board-panel"><div class="board-heading"><b>🧩 BẢNG Ô CHỮ</b><div class="d-flex gap-2 align-items-center"><span class="badge text-bg-info" id="levelBadge">MEDIUM</span><span class="badge text-bg-warning" id="boardProgress">Đang thi đấu</span></div></div><div class="board-scroll"><div class="grid" id="grid"></div></div><div class="board-controls"><div class="text-secondary small" id="currentClue">Chọn một ô trên bảng</div><input id="mobileKeyboard" class="mobile-keyboard-input" type="text" inputmode="text" maxlength="1" autocomplete="off" autocapitalize="characters" spellcheck="false" enterkeyhint="done" placeholder="Chạm vào đây để nhập chữ cái..." aria-label="Nhập chữ cái cho ô đang chọn"><div class="board-actions"><button class="primary" id="submit">✓ KIỂM TRA</button><button class="surrender" id="surrender">🏳 ĐẦU HÀNG</button></div></div></section>
  <aside class="side side-right">
   <section class="panel clue-panel"><div class="clues"><div class="clue-col"><h3>➡️ Hàng ngang</h3><div id="across"></div></div><div class="clue-col"><h3>⬇️ Hàng dọc</h3><div id="down"></div></div></div></section>
  </aside>
@@ -195,7 +212,7 @@
 <audio id="themeAudio" loop preload="auto"></audio>
 <audio id="winAudio" preload="auto"></audio>
 <audio id="loseAudio" preload="auto"></audio>
-<input id="mobileKeyboard" class="mobile-keyboard-input" type="text" inputmode="text" autocomplete="off" autocapitalize="characters" spellcheck="false" aria-label="Nhập chữ cái cho ô chữ">
+
 <div class="result-modal" id="resultModal" aria-hidden="true">
  <div class="result-dialog" role="dialog" aria-modal="true" aria-labelledby="resultTitle">
   <div class="result-icon" id="resultIcon">🏆</div>
@@ -320,8 +337,9 @@ function cellKeyFor(p,offset){
 function focusMobileKeyboard(){
  const input=$("mobileKeyboard");
  if(!input||gameEnded)return;
+ // Only mobile/tablet layout displays this input. Focus is called from the user's tap.
  input.value="";
- input.focus({preventScroll:true});
+ try{input.focus({preventScroll:true})}catch(_){input.focus()}
 }
 function handleMobileInput(){
  const input=$("mobileKeyboard");
@@ -333,7 +351,7 @@ function handleMobileInput(){
  if(!cell||cell.entries.some(i=>solved.has(i)))return;
  boardLetters[activeCell]=chars.slice(-1);
  render();
- focusMobileKeyboard();
+ // Keep the already-focused, visible input active so the keyboard stays open.
 }
 function selectCell(key){
  if(gameEnded)return;
@@ -485,6 +503,7 @@ $("resultClose").onclick=closeResultModal;
 $("resultNewGame").onclick=()=>{closeResultModal();Object.values(audio).forEach(a=>a.pause());currentThemeSrc=null;$("game").style.display="none";$("setup").style.display="block";};
 $("resultModal").addEventListener("click",e=>{if(e.target===$("resultModal"))closeResultModal()});
 document.addEventListener("keydown",handleBoardKey);
+$("mobileKeyboard").addEventListener("input",handleMobileInput);
 Object.values(volumeIds).forEach(id=>$(id).addEventListener("input",applyVolumes));
 $("soundToggle").onclick=()=>{
  soundEnabled=!soundEnabled;
