@@ -78,6 +78,10 @@
  .primary{padding:11px 12px;font-size:.88rem}
 }
 
+/* Mobile virtual keyboard bridge */
+
+.mobile-keyboard-input{position:fixed;left:0;bottom:0;width:2px;height:2px;opacity:.01;border:0;padding:0;margin:0;z-index:-1;font-size:16px;pointer-events:none}
+
 /* Header compact game controls and answer button under the board */
 
 .result-modal{position:fixed;inset:0;z-index:10000;display:none;align-items:center;justify-content:center;padding:16px;background:#18233dcc;backdrop-filter:blur(5px)}
@@ -191,6 +195,7 @@
 <audio id="themeAudio" loop preload="auto"></audio>
 <audio id="winAudio" preload="auto"></audio>
 <audio id="loseAudio" preload="auto"></audio>
+<input id="mobileKeyboard" class="mobile-keyboard-input" type="text" inputmode="text" autocomplete="off" autocapitalize="characters" spellcheck="false" aria-label="Nhập chữ cái cho ô chữ">
 <div class="result-modal" id="resultModal" aria-hidden="true">
  <div class="result-dialog" role="dialog" aria-modal="true" aria-labelledby="resultTitle">
   <div class="result-icon" id="resultIcon">🏆</div>
@@ -312,6 +317,24 @@ function buildPuzzle(){
 function cellKeyFor(p,offset){
  return (p.r+(p.dir==="D"?offset:0))+","+(p.c+(p.dir==="A"?offset:0));
 }
+function focusMobileKeyboard(){
+ const input=$("mobileKeyboard");
+ if(!input||gameEnded)return;
+ input.value="";
+ input.focus({preventScroll:true});
+}
+function handleMobileInput(){
+ const input=$("mobileKeyboard");
+ if(!input||!input.value)return;
+ const chars=input.value.toUpperCase().replace(/[^A-Z]/g,"");
+ input.value="";
+ if(!chars||selected===null||activeCell===null||gameEnded)return;
+ const cell=cells[activeCell];
+ if(!cell||cell.entries.some(i=>solved.has(i)))return;
+ boardLetters[activeCell]=chars.slice(-1);
+ render();
+ focusMobileKeyboard();
+}
 function selectCell(key){
  if(gameEnded)return;
  const cell=cells[key];if(!cell)return;
@@ -319,6 +342,7 @@ function selectCell(key){
   ?selected:cell.entries.find(i=>!solved.has(i));
  if(idx===undefined)return;
  selected=idx;activeCell=key;
+ focusMobileKeyboard();
  const p=placements[idx];
  $("currentClue").textContent=p.num+". "+p.vi+" ("+p.en.length+" chữ cái)";
  render();
@@ -328,6 +352,7 @@ function selectClue(idx){
  selected=idx;
  const p=placements[idx];
  activeCell=cellKeyFor(p,0);
+ focusMobileKeyboard();
  $("currentClue").textContent=p.num+". "+p.vi+" ("+p.en.length+" chữ cái)";
  render();
 }
@@ -381,6 +406,7 @@ function handleBoardKey(e){
   if(!cell||cell.entries.some(i=>solved.has(i)))return;
   boardLetters[activeCell]=e.key.toUpperCase();
   render();
+  if(/Android|iPhone|iPad|iPod/i.test(navigator.userAgent))focusMobileKeyboard();
  }
 }
 function setTurn(){ $("turn").textContent="Đến lượt: "+players[turn].name;document.querySelectorAll(".player").forEach((el,i)=>el.classList.toggle("active",i===turn))}
